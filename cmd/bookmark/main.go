@@ -4,11 +4,10 @@ import (
 	"fmt"
 	"os"
 
-	"encoding/json"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"io"
+	"github.com/edgarlatorre/bookmark/internal/repositories"
 	"os/exec"
 )
 
@@ -26,34 +25,23 @@ type model struct {
 	list list.Model
 }
 
-type Urls struct {
-	Urls []Url `json:"urls"`
-}
-
-type Url struct {
-	Name string `json:"title"`
-	Url  string `json:"url"`
-}
-
 func initialData() model {
-	jsonFile, err := os.Open("urls.json")
+	urls, err := repositories.Read("urls.json")
 
 	if err != nil {
-		fmt.Println(err)
+		fmt.Println("Error to read json file:", err)
+
+		m := model{list: list.New(nil, list.NewDefaultDelegate(), 0, 0)}
+		m.list.Title = "Bookmark"
+
+		return m
 	}
 
-	byteValue, _ := io.ReadAll(jsonFile)
+	items := make([]list.Item, len(urls))
 
-	var urls Urls
-	json.Unmarshal([]byte(byteValue), &urls)
-
-	items := make([]list.Item, len(urls.Urls))
-
-	for i, u := range urls.Urls {
+	for i, u := range urls {
 		items[i] = item{title: u.Name, url: u.Url}
 	}
-
-	defer jsonFile.Close()
 
 	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
 	m.list.Title = "Bookmark"

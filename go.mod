@@ -1,4 +1,4 @@
-module bookmark-cli
+module github.com/edgarlatorre/bookmark
 
 go 1.21.4
 
