@@ -11,7 +11,7 @@ make test
 
 Run app
 ```bash
-make app
+make run
 ```
 
 Get dependencies
