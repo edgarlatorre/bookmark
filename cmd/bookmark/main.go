@@ -4,47 +4,51 @@ import (
 	"fmt"
 	"os"
 
+	"github.com/charmbracelet/bubbles/key"
 	"github.com/charmbracelet/bubbles/list"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
-	"github.com/edgarlatorre/bookmark/internal/repositories"
-	"os/exec"
+	"github.com/edgarlatorre/bookmark/internal/models"
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
 
-type item struct {
-	title, url string
+type State uint
+
+const (
+	listView State = iota
+	formView
+)
+
+type keymap struct {
+	Create key.Binding
 }
 
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.url }
-func (i item) FilterValue() string { return i.title }
+var Keymap = keymap{
+	Create: key.NewBinding(
+		key.WithKeys("n"),
+		key.WithHelp("n", "New url"),
+	),
+}
 
 type model struct {
-	list list.Model
+	state State
+	list  list.Model
+	form  models.FormModel
 }
 
 func initialData() model {
-	urls, err := repositories.Read("urls.json")
-
-	if err != nil {
-		fmt.Println("Error to read json file:", err)
-
-		m := model{list: list.New(nil, list.NewDefaultDelegate(), 0, 0)}
-		m.list.Title = "Bookmark"
-
-		return m
+	m := model{
+		state: listView,
+		list:  models.NewListModel(),
+		form:  models.NewFormModel(),
 	}
 
-	items := make([]list.Item, len(urls))
-
-	for i, u := range urls {
-		items[i] = item{title: u.Name, url: u.Url}
+	m.list.AdditionalShortHelpKeys = func() []key.Binding {
+		return []key.Binding{
+			Keymap.Create,
+		}
 	}
-
-	m := model{list: list.New(items, list.NewDefaultDelegate(), 0, 0)}
-	m.list.Title = "Bookmark"
 
 	return m
 }
@@ -62,33 +66,30 @@ func main() {
 }
 
 func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
+	var cmd tea.Cmd
+
+	if m.state == listView {
+		m.list, cmd = models.UpdateList(m.list, msg)
+	} else {
+		m.form, cmd = models.UpdateForm(m.form, msg)
+	}
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {
-		case "ctrl+c", "q":
-			return m, tea.Quit
-		case "enter", " ":
-			if item, ok := m.list.SelectedItem().(item); ok {
-				cmd := exec.Command("open", item.Description())
-				_, err := cmd.Output()
-
-				if err != nil {
-					fmt.Println(err.Error())
-				}
-			} else {
-				fmt.Println("Not found")
-			}
+		case "n":
+			m.state = formView
+		case "esc", "back":
+			m.state = listView
 		}
-	case tea.WindowSizeMsg:
-		h, v := docStyle.GetFrameSize()
-		m.list.SetSize(msg.Width-h, msg.Height-v)
 	}
 
-	var cmd tea.Cmd
-	m.list, cmd = m.list.Update(msg)
 	return m, cmd
 }
 
 func (m model) View() string {
-	return docStyle.Render(m.list.View())
+	if m.state == listView {
+		return m.list.View()
+	} else {
+		return m.form.View()
+	}
 }
