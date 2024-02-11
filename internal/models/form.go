@@ -47,6 +47,47 @@ func (m FormModel) Init() tea.Cmd {
 func UpdateForm(m FormModel, msg tea.Msg) (FormModel, tea.Cmd) {
 	cmd := m.updateInputs(msg)
 
+	switch msg := msg.(type) {
+	case tea.KeyMsg:
+		switch msg.String() {
+		case "tab", "shift+tab", "enter":
+			s := msg.String()
+
+			if s == "enter" && m.focusIndex == len(m.form) {
+				return m, tea.Quit
+			}
+
+			if s == "shift+tab" {
+				m.focusIndex--
+			} else {
+				m.focusIndex++
+			}
+
+			if m.focusIndex > len(m.form) {
+				m.focusIndex = 0
+			} else if m.focusIndex < 0 {
+				m.focusIndex = len(m.form)
+			}
+
+			cmds := make([]tea.Cmd, len(m.form))
+			for i := 0; i <= len(m.form)-1; i++ {
+				if i == m.focusIndex {
+					// Set focused state
+					cmds[i] = m.form[i].Focus()
+					m.form[i].PromptStyle = focusedStyle
+					m.form[i].TextStyle = focusedStyle
+					continue
+				}
+				// Remove focused state
+				m.form[i].Blur()
+				m.form[i].PromptStyle = noStyle
+				m.form[i].TextStyle = noStyle
+			}
+
+			return m, tea.Batch(cmds...)
+		}
+	}
+
 	return m, cmd
 }
 
@@ -74,6 +115,11 @@ func (m FormModel) View() string {
 	}
 
 	button := &blurredButton
+
+	if m.focusIndex == len(m.form) {
+		button = &focusedButton
+	}
+
 	fmt.Fprintf(&b, "\n\n  %s\n\n", *button)
 
 	return b.String()
