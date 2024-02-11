@@ -73,6 +73,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 	} else {
 		m.form, cmd = models.UpdateForm(m.form, msg)
 	}
+
 	switch msg := msg.(type) {
 	case tea.KeyMsg:
 		switch msg.String() {

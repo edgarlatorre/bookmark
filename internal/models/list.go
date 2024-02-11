@@ -37,11 +37,12 @@ func (i item) Description() string { return i.url }
 func (i item) FilterValue() string { return i.title }
 
 func NewListModel() list.Model {
-	urls, err := repositories.Read("urls.json")
+	repository := repositories.UrlRepository{FilePath: "urls.csv"}
+	urls, err := repository.Read()
 	m := list.Model{}
 
 	if err != nil {
-		fmt.Println("Error to read json file:", err)
+		fmt.Println("Error to read csv file:", err)
 
 		return m
 	}
