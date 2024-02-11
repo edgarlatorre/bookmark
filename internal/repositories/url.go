@@ -2,7 +2,6 @@ package repositories
 
 import (
 	"encoding/csv"
-	"fmt"
 	"os"
 )
 
@@ -10,6 +9,10 @@ type Url struct {
 	Name string
 	Url  string
 }
+
+func (i Url) Title() string       { return i.Name }
+func (i Url) Description() string { return i.Url }
+func (i Url) FilterValue() string { return i.Name }
 
 type UrlRepository struct {
 	FilePath string
@@ -36,8 +39,6 @@ func (r UrlRepository) Read() ([]Url, error) {
 	for i, l := range records {
 		urls[i] = Url{Name: l[0], Url: l[1]}
 	}
-
-	fmt.Println("URLS", urls)
 
 	return urls, nil
 }

@@ -9,6 +9,7 @@ import (
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/edgarlatorre/bookmark/internal/models"
+	"github.com/edgarlatorre/bookmark/internal/repositories"
 )
 
 var docStyle = lipgloss.NewStyle().Margin(1, 2)
@@ -81,6 +82,7 @@ func (m model) Update(msg tea.Msg) (tea.Model, tea.Cmd) {
 			m.state = formView
 		case "esc", "back":
 			m.state = listView
+			updateItems(&m)
 		}
 	}
 
@@ -93,4 +95,23 @@ func (m model) View() string {
 	} else {
 		return m.form.View()
 	}
+}
+
+func updateItems(m *model) {
+	repository := repositories.UrlRepository{FilePath: "urls.csv"}
+	urls, err := repository.Read()
+
+	if err != nil {
+		fmt.Println("Error to read csv file:", err)
+
+		return
+	}
+
+	items := make([]list.Item, len(urls))
+
+	for i, u := range urls {
+		items[i] = u
+	}
+
+	m.list.SetItems(items)
 }

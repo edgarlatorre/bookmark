@@ -8,6 +8,7 @@ import (
 	"github.com/charmbracelet/bubbles/textinput"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
+	"github.com/edgarlatorre/bookmark/internal/repositories"
 )
 
 var (
@@ -29,12 +30,15 @@ type FormModel struct {
 }
 
 func NewFormModel() FormModel {
-	t := textinput.New()
-	t.Placeholder = "Url"
-	t.Focus()
+	nameInput := textinput.New()
+	nameInput.Placeholder = "Name"
+	nameInput.Focus()
+
+	urlInput := textinput.New()
+	urlInput.Placeholder = "Url"
 
 	m := FormModel{
-		form: []textinput.Model{t},
+		form: []textinput.Model{nameInput, urlInput},
 	}
 
 	return m
@@ -54,7 +58,15 @@ func UpdateForm(m FormModel, msg tea.Msg) (FormModel, tea.Cmd) {
 			s := msg.String()
 
 			if s == "enter" && m.focusIndex == len(m.form) {
-				return m, tea.Quit
+				if m.form[0].Value() != "" && m.form[0].Value() != "" {
+					r := repositories.UrlRepository{FilePath: "urls.csv"}
+					_, err := r.Create(m.form[1].Value(), m.form[0].Value())
+
+					if err != nil {
+						return m, tea.Quit
+					}
+				}
+				return m, tea.ClearScreen
 			}
 
 			if s == "shift+tab" {
@@ -111,7 +123,7 @@ func (m FormModel) View() string {
 	b.WriteString("\n\n")
 
 	for i := range m.form {
-		b.WriteString("  " + m.form[i].View())
+		b.WriteString("  " + m.form[i].View() + "\n\n")
 	}
 
 	button := &blurredButton
@@ -120,7 +132,7 @@ func (m FormModel) View() string {
 		button = &focusedButton
 	}
 
-	fmt.Fprintf(&b, "\n\n  %s\n\n", *button)
+	fmt.Fprintf(&b, "  %s\n\n", *button)
 
 	return b.String()
 }

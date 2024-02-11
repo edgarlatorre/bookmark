@@ -32,10 +32,6 @@ type ListModel struct {
 	model list.Model
 }
 
-func (i item) Title() string       { return i.title }
-func (i item) Description() string { return i.url }
-func (i item) FilterValue() string { return i.title }
-
 func NewListModel() list.Model {
 	repository := repositories.UrlRepository{FilePath: "urls.csv"}
 	urls, err := repository.Read()
@@ -50,7 +46,7 @@ func NewListModel() list.Model {
 	items := make([]list.Item, len(urls))
 
 	for i, u := range urls {
-		items[i] = item{title: u.Name, url: u.Url}
+		items[i] = u
 	}
 
 	m = list.New(items, list.NewDefaultDelegate(), 0, 0)
@@ -73,7 +69,7 @@ func UpdateList(m list.Model, msg tea.Msg) (list.Model, tea.Cmd) {
 		case "c":
 			return m, tea.Quit
 		case "enter", " ":
-			if item, ok := m.SelectedItem().(item); ok {
+			if item, ok := m.SelectedItem().(repositories.Url); ok {
 				cmd := exec.Command("open", item.Description())
 				_, err := cmd.Output()
 
